@@ -1,47 +1,43 @@
-const { db, User, Page } = require('./models');
-const express = require("express")
-const morgan = require("morgan")
-const wikiRouter = require('./routes/wiki')
-const userRouter = require('./routes/user')
+const express = require("express");
+const app = express();
+const morgan = require("morgan");
+const bodyParser = require("body-parser");
+const path = require("path");
 
-// const bodyParser = require()
-
-
-
-const app = express()
-
-app.use(morgan('dev'))
-app.use (express.urlencoded({extended: false}))
-app.use('/wiki', wikiRouter);
-app.use('/user', userRouter);
-
-app.get("/", (req, res) => {
-  res.redirect('/wiki')
-})
+app.use(morgan("dev")); //logging middleware
+app.use(express.static(path.join(__dirname, "./public"))); //serving up static files (e.g. css files)
+app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
 
 
-
-const PORT = 3000
+const { db, Page, User } = require('./models')
+const PORT = 8080;
 
 const init = async () => {
+  //sync creates the table if it does not exist. alter true creates the tables and makes any changes to keep the modules in sync
+  // await User.sync()
+  // await Page.sync()
 
-  try{
-  await db.sync({force: true})
+  await db.sync()
 
+  // server.listen(PORT, () => {
     app.listen(PORT, () => {
-      console.log(`Server is listening on port ${PORT}!`)
-    })
-
-  } catch(err){
-    console.log("the kitchen is on fire")
-  }
-
+    console.log(`Server is listening on port ${PORT}!`);
+  });
 }
-
 
 init();
 
-db.authenticate().
-then(() => {
-  console.log('connected to the database');
-})
+app.use("/wiki", require("./routes/wiki"));
+app.use("/users", require("./routes/users"));
+
+
+
+
+app.get('/', function (req, res) {
+   res.redirect('/wiki/');
+});
+
+
+
+module.exports = app;
